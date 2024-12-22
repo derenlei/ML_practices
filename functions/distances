@@ -15,4 +15,4 @@ def manhattan_distance(t1: np.ndarray, t2: np.ndarray) -> np.float64:
 def cosine_distance(t1: np.ndarray, t2: np.ndarray) -> np.float64:
     if np.count_nonzero(t1) == 0 or np.count_nonzero(t2) == 0:
         raise ValueError("Cosine distance is undefined for zero-tensors")
-    return t1.dot(t2) / (np.linalg.norm(t1) * np.linalg.norm(t2))
+    return (t1 @ t2.T) / (np.linalg.norm(t1) * np.linalg.norm(t2))
