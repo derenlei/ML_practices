@@ -21,8 +21,8 @@ class SVM:
                 yi = y[idx]
                 condition = y * (xi @ w.T + self.b)
                 if condition < 1:
-                    dw = -y * x
-                    db = -y
+                    dw = self.w - self.c * y * x
+                    db = -self.c * y
                 else:
                     dw = self.w
                     db = 0
