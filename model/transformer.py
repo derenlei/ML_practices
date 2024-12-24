@@ -1,3 +1,9 @@
+import math
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class RMSNorm(nn.Module):
     def __init__(self, dim, eps=1e-6):
         self.eps = eps
@@ -7,7 +13,7 @@ class RMSNorm(nn.Module):
         # That way, the multiplication x * torch.rsqrt(...) is correctly broadcast over the last dimension.
         return x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True)+ self.eps)
     def forward(self, x):
-        # float() convert to float32 to od RMS calculation in higher  or more stabl eprecision to avoid numerical issues.
+        # float() convert to float32 to od RMS calculation in higher  or more stable precision to avoid numerical issues.
         # convert back to original x (fp16, bf16, fp32)
         output = self._norm(x.float()).type_as(x)
         return output * self.weight
@@ -22,7 +28,7 @@ class LayerNorm(nn.Module):
         mean = x.mean(dim=-1, keepdim=True)
         # if unbiased = True, var = 1/(n-1) * (x-x.mean(dim=-1, keepdim=True)).sum(dim=-1,keepdim=True)
         # n-1 is called sample variance and n is called population variance. 
-        # Sample variance correct the bias tht can arise when estimating entire population from just a sample.
+        # Sample variance corrects the bias that can arise when estimating the entire population from just a sample.
         var = x.var(dim=-1, keepdim=True, unbiased=False)
         x_normalized = (x - mean) / torch.sqrt(var + self.eps)
         return x_normalized
@@ -35,8 +41,8 @@ class EncoderLayer(nn.Module):
         super().__init__()
         self.self_attn = MultiHeadAttention(d_model, num_head)
         self.feed_forward = FeedForward(d_model, d_ff)
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
+        self.norm1 = RMSNorm(d_model)
+        self.norm2 = RMSNorm(d_model)
     def forward(self, x):
         x = x + self.self_attn(self.norm1(x))
         x = x + self.feed_forward(self.norm2(x))
@@ -83,7 +89,31 @@ class FeedForward(nn.Module):
         super().__init__()
         self.w1 = nn.Linear(d_model, d_ff)
         self.w2 = nn.Linear(d_model, d_ff)
-        self.w3 = nn.Linear(d_model, d_ff)
+        self.w3 = nn.Linear(d_ff, d_model)
     def forward(self, x):
         return self.w3(F.silu(self.w1(x)) * self.w2(x))
-        
+
+
+class TransformerBlock(nn.Module):
+    def __init__(self, n_heads, dim):
+        super().__init__()
+        self.n_heads = n_heads
+        self.dim = dim
+        self.head_dim = dim // n_heads
+        self.attention = Attention(dim, n_head)
+        self.feed_forward = FeedForward(
+            d_model=dim,
+            d_ff=4 * dim,
+        )
+        self.attention_norm = RMSNorm(dim, eps=args.norm_eps)
+        self.ffn_norm = RMSNorm(dim, eps=args.norm_eps)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        start_pos: int,
+        mask: Optional[torch.Tensor],
+    ):
+        h = x + self.attention(self.attention_norm(x),mask)
+        out = h + self.feed_forward(self.ffn_norm(h))
+        return out
