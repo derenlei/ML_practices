@@ -1,4 +1,3 @@
-# Add RMS NORM and replace norm1 and norm2
 class RMSNorm(nn.Module):
     def __init__(self, dim, eps=1e-6):
         self.eps = eps
@@ -15,7 +14,20 @@ class RMSNorm(nn.Module):
         
     
 class LayerNorm(nn.Module):
-    
+    def __init__(self, dim, eps=1e-6):
+        self.eps = eps
+        self.weight = nn.parameters(torch.ones(dim))
+        self.bias = nn.parameters(torch.zeros(dim))
+    def _norm(self, x):
+        mean = x.mean(dim=-1, keepdim=True)
+        # if unbiased = True, var = 1/(n-1) * (x-x.mean(dim=-1, keepdim=True)).sum(dim=-1,keepdim=True)
+        # n-1 is called sample variance and n is called population variance. 
+        # Sample variance correct the bias tht can arise when estimating entire population from just a sample.
+        var = x.var(dim=-1, keepdim=True, unbiased=False)
+        x_normalized = (x - mean) / torch.sqrt(var + self.eps)
+        return x_normalized
+    def forward(self, x):
+        return output * self.weight + welf.bias
 
 
 class EncoderLayer(nn.Module):
