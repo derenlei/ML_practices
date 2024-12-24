@@ -1,4 +1,22 @@
 # Add RMS NORM and replace norm1 and norm2
+class RMSNorm(nn.Module):
+    def __init__(self, dim, eps=1e-6):
+        self.eps = eps
+        self.weight =  nn.Prameters(torch.ones(dim))
+    def _norm(self, x):
+        # setting keepdim=True ensures the output still has shape (batch_size, seq_len, 1) rather than (batch_size, seq_len). 
+        # That way, the multiplication x * torch.rsqrt(...) is correctly broadcast over the last dimension.
+        return x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True)+ self.eps)
+    def forward(self, x):
+        # float() convert to float32 to od RMS calculation in higher  or more stabl eprecision to avoid numerical issues.
+        # convert back to original x (fp16, bf16, fp32)
+        output = self._norm(x.float()).type_as(x)
+        return output * self.weight
+        
+    
+class LayerNorm(nn.Module):
+    
+
 
 class EncoderLayer(nn.Module):
     def __init__(self, d_model, num_head, d_ff):
