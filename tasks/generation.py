@@ -123,8 +123,11 @@ def train_gpt():
             loss = criterion(logits.view(-1, vocab_size), y.view(-1))
 
             # Backward pass and optimization
+            # Resets all gradients to zero, ensuring there’s no interference from previous steps.
             optimizer.zero_grad()
+            # Computes the gradients for the current batch and stores them in .grad
             loss.backward()
+            # Uses the .grad values to update the model parameters.
             optimizer.step()
 
             total_loss += loss.item()
