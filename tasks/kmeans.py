@@ -39,11 +39,11 @@ def euclidean_distance(a, b):
     return np.sqrt(((a - b) ** 2).sum(axis=1))
     
 def k_means_clustering(points: list[tuple[float, float]], k: int, initial_centroids: list[tuple[float, float]], max_iterations: int) -> list[tuple[float, float]]:
-	points = np.array(points)
-	centroids = np.array(initial_centroids)
-	for iteration in range(max_iterations):
+    points = np.array(points)
+    centroids = np.array(initial_centroids)
+    for iteration in range(max_iterations):
         distances = np.array([euclidean_distance(points, c) for c in centroids])
         idx = np.argmin(distances, dim=0)
         new_centroids = np.array([np.mean(points[idx == i] ,axis=0) for i in range(k)])
-	    centroids = new_centroids
+        centroids = new_centroids
 	return [tuple(centroid) for centroid in centroids]
