@@ -15,6 +15,7 @@ def sample_top_p(probs, p):
     """
     probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
     probs_sum = torch.cumsum(probs_sort, dim=-1)
+    # select tokens until the cumulative probability exists the chosen threshold P
     mask = probs_sum - probs_sort > p
     probs_sort[mask] = 0.0
     probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True))
@@ -60,6 +61,7 @@ def sample_top_p(probs, p):
         assert max_prompt_len <= params.max_seq_len
         total_len = min(params.max_seq_len, max_gen_len + max_prompt_len)
 
+        # dynamic padding
         pad_id = self.tokenizer.pad_id
         tokens = torch.full((bsz, total_len), pad_id, dtype=torch.long, device="cuda")
         for k, t in enumerate(prompt_tokens):
@@ -73,7 +75,7 @@ def sample_top_p(probs, p):
         if min_prompt_len == total_len:
             logits = self.model.forward(tokens, prev_pos)
             token_logprobs = -F.cross_entropy(
-                input=logits.transpose(1, 2),
+                input=logits.transpose(1, 2), #F.cross_entropy takes (batch_size, vocab_size, seq_len)
                 target=tokens,
                 reduction="none",
                 ignore_index=pad_id,
@@ -82,7 +84,10 @@ def sample_top_p(probs, p):
         stop_tokens = torch.tensor(list(self.tokenizer.stop_tokens))
 
         for cur_pos in range(min_prompt_len, total_len):
+            # KV caching style
             logits = self.model.forward(tokens[:, prev_pos:cur_pos], prev_pos)
+            # Non KV cache
+            # logits = self.model.forward(tokens[:, :cur_pos])
             if temperature > 0:
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
                 next_token = sample_top_p(probs, top_p)
@@ -102,6 +107,9 @@ def sample_top_p(probs, p):
                     reduction="none",
                     ignore_index=pad_id,
                 )
+
+            # if the current token was not part of the prompt (so, newly generated) and it’s a stop token.
+            # eos_reached = eos_reached or above condition met at current state
             eos_reached |= (~input_text_mask[:, cur_pos]) & (
                 torch.isin(next_token, stop_tokens)
             )
