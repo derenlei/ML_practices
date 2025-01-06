@@ -36,3 +36,45 @@ y_true = torch.tensor([1, 1, 1, 0, 0, 1, 0])
 
 pr_auc = compute_pr_auc_no_loop_no_trapz(y_true, y_pred)
 print(f"PR-AUC: {pr_auc}")
+
+
+
+def pr_auc_multiclass_ovr(y_pred, y_true):
+    """
+    Multi-class PR AUC by One-vs-Rest.
+    y_pred: [N, C], raw scores or probabilities for each class
+    y_true: [N] with integer class labels in {0..C-1}
+    Returns: Macro-average PR AUC over all classes
+    """
+    n_classes = y_pred.shape[1]
+    pr_aucs = []
+
+    for c in range(n_classes):
+        # Convert labels to binary: 1 if class == c, else 0
+        y_true_c = (y_true == c).float()
+        # Scores for the c-th class
+        y_pred_c = y_pred[:, c]
+        # Compute binary PR AUC
+        auc_c = pr_auc_binary(y_pred_c, y_true_c)
+        pr_aucs.append(auc_c)
+
+    # Macro-average
+    return torch.mean(torch.stack(pr_aucs))
+
+
+def pr_auc_multilabel(y_pred, y_true):
+    """
+    y_pred: [N, C]
+    y_true: [N, C] in {0,1}
+    Return macro-average PR AUC across labels
+    """
+    assert y_pred.shape == y_true.shape
+    n_labels = y_pred.shape[1]
+    pr_aucs = []
+
+    for c in range(n_labels):
+        y_pred_c = y_pred[:, c]
+        y_true_c = y_true[:, c]
+        pr_aucs.append(pr_auc_binary(y_pred_c, y_true_c))  # same binary function
+
+    return torch.mean(torch.stack(pr_aucs))
