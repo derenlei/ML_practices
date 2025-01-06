@@ -1,3 +1,29 @@
+class LogisticRegression:
+    def __init__(self,lr, epochs):
+        self.lr = lr
+        self.epochs = epochs
+
+    def train(self, x, y):
+        x = torch.cat([x, torch.ones(x.shape[0], 1)], dim=1)
+        self.w = torch.zeros(x.shape[1], 1)
+        for epoch in range(self.epochs):
+            output = self.predict(x, bias=True)
+            dw = x.T @ (output - y.unsequeeze(1)) / x.shape[0]
+            self.w -= self.lr * dw
+
+            loss = -torch.mean(y * torch.log(pred.squeeze()) + (1-y) * torch.log(1-pred.squeeze()))
+            print(loss)
+
+    def predict(self, x, bias = False):
+        if not bias:
+            x = torch.cat([x, torch.ones(x.shape[0], 1)], dim=1)
+        linear = x @ self.w
+        # torch.sigmoid(linear)
+        output = 1 / (1 + torch.exp(-linear))
+        return output
+
+# -------------------numoy----------------------------
+
 import numpy as np
 
 from dataclasses import dataclass
