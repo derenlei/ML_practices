@@ -1,3 +1,27 @@
+class LinearRegression:
+    def __init__(self, lr, epochs):
+        self.lr = lr
+        self.epochs = epochs
+        self.weights = None
+        self.bias = None
+    def learn(self, dataset, labels):
+        self.weights = torch.zeros(dataset.shape[-1], 1)
+        self.bias = torch.tensor(0)
+        
+        for epoch in range(self.epochs):
+            preds = self.predict(dataset)
+            # loss = (labels - preds)**2.mean(dim=0)
+            dw = -2/dataset.shape[0] * dataset.T @ (labels.unsqueeze(1) - preds)
+            db = -2/dataset.shape[0] * (labels.unsqueeze(1) - press).sum(dim=0)
+            self.weights -= self.lr * dw
+            self.bias -= self.lr * db
+
+    def predict(self, dataset):
+        output = dataset @ self.weights + self.bias
+        return output
+
+
+# -----------------numpy-----------------------
 import numpy as np
 
 from dataclasses import dataclass
