@@ -1,6 +1,63 @@
 import numpy as np
 import tensorflow as tf
 
+import torch
+import torch.nn as nn
+import math
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        """
+        Args:
+            d_model (int): The dimensionality of the embedding space.
+            max_len (int): The maximum length of the sequence to support.
+        """
+        super(PositionalEncoding, self).__init__()
+
+        # Create a matrix of shape (max_len, d_model) to store the positional encodings
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)  # Shape: (max_len, 1)
+        i = torch.arange(0, d_model, dtype=torch.float).unsqueeze(0)  # Shape: (1, d_model)
+
+        # Compute angle radians similar to numpy implementation
+        angle_rads = position / torch.pow(10000, (2 * (i // 2)) / d_model)
+
+        # Apply sine to even indices and cosine to odd indices
+        pe = torch.zeros(max_len, d_model)
+        pe[:, 0::2] = torch.sin(angle_rads[:, 0::2])  # Even indices (0, 2, 4, ...)
+        pe[:, 1::2] = torch.cos(angle_rads[:, 1::2])  # Odd indices (1, 3, 5, ...)
+
+        # Add a batch dimension to the positional encodings
+        pe = pe.unsqueeze(0)  # Shape: (1, max_len, d_model)
+
+        # Register the positional encodings as a buffer, so they are not updated during training
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        """
+        Args:
+            x (Tensor): Input tensor of shape (batch_size, seq_len, d_model).
+
+        Returns:
+            Tensor: Positional encoded tensor of the same shape as input.
+        """
+        seq_len = x.size(1)
+        # Add positional encoding to the input tensor
+        return x + self.pe[:, :seq_len, :]
+
+# Example usage
+if __name__ == "__main__":
+    d_model = 512
+    max_len = 100
+    seq_len = 20
+    batch_size = 32
+
+    positional_encoding = PositionalEncoding(d_model=d_model, max_len=max_len)
+    x = torch.zeros(batch_size, seq_len, d_model)  # Example input
+    output = positional_encoding(x)
+    print("Output shape:", output.shape)
+
+
+
 def positional_encoding(position, d_model):
     """
     Generates positional encoding for a sequence using sine and cosine functions.
