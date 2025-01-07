@@ -110,7 +110,7 @@ class LlamaForSequenceClassification(nn.Module):
         # logits = self.cls(0[:,-1,:]) # if left padding
 
         seq_len = attention_mask.sum(dim=1) - 1
-        polled_output = o.hidden_states[torch.arange(input_ids.shape[0]), seq_len]
+        polled_output = o.hidden_states[torch.arange(input_ids.shape[0]), seq_len, :]
         logits = self.cls(polled_output)
         
         loss = self.loss_fn(logits, labels)
