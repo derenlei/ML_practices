@@ -35,7 +35,7 @@ class RewardModel(nn.Module):
 
         # Find the last non-padding token for each sequence
         sequence_lengths = attention_mask.sum(dim=1) - 1  # Indices of last non-padding tokens
-        pooled_output = hidden_states[torch.arange(hidden_states.size(0)), sequence_lengths]  # (batch_size, hidden_size)
+        pooled_output = hidden_states[torch.arange(hidden_states.size(0)), sequence_lengths, :]  # (batch_size, hidden_size)
 
         reward = self.reward_head(pooled_output)  # (batch_size, 1)
         return reward
