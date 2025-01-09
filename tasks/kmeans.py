@@ -24,6 +24,8 @@ def kmeans(X, k, max_iter=100, tolerance=1e-4):
         #    - We compute distance from each point to each centroid
         #    - Then pick the centroid with the minimal distance
         # shape of distances: (N, k)
+
+        # sqrt(sum(x1**2 + x1**2，...))
         distances = torch.cdist(X, centroids, p=2)
         new_labels = distances.argmin(dim=1)  # shape: (N,)
         
