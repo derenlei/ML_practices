@@ -17,6 +17,8 @@ class KNN:
         dist = torch.sqrt(((query.squeeze(1) - self.features(0))**2).sum(-1))
         topks = torch.argmin(dist, dim=-1)[:self.k]
         knn_labels = labels[topks] # (n_queries, labels)
+
+        # torch.mode return (values, indices) where values are first highest frequency value, index is last idx of that value found.
         predicted_labels = torch.mode(knn_labels, dim=-1).values
         return predicted_labels
 
